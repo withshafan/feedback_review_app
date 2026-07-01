@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import '../models/feedback_model.dart';
 import '../services/auth_service.dart';
@@ -26,7 +27,7 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
   void initState() {
     super.initState();
     _fetchRole();
-    _replyController.text = widget.feedback.adminReply ?? '';
+    _replyController.text = widget.feedback.adminReplyText ?? '';
   }
 
   Future<void> _fetchRole() async {
@@ -62,7 +63,7 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to update status'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Failed to update status: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -92,14 +93,14 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
         await context.read<FeedbackService>().deleteFeedback(widget.feedback.id);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Feedback deleted')),
+            const SnackBar(content: Text('Feedback deleted successfully')),
           );
           Navigator.pop(context);
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to delete'), backgroundColor: Colors.red),
+            SnackBar(content: Text('Failed to delete feedback: $e'), backgroundColor: Colors.red),
           );
         }
       }
@@ -131,24 +132,38 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
     }
   }
 
+  Color _getCategoryColor(BuildContext context, String category) {
+    switch (category.toLowerCase()) {
+      case 'bug':
+        return Colors.red.shade400;
+      case 'feature':
+        return Colors.blue.shade400;
+      case 'praise':
+        return Colors.green.shade400;
+      case 'complaint':
+        return Colors.orange.shade400;
+      default:
+        return Colors.grey.shade500;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final authService = context.watch<AuthService>();
     final currentUser = authService.currentUser;
     final isOwner = currentUser != null && currentUser.uid == widget.feedback.userId;
-    final isOpen = widget.feedback.status == 'open';
+    final isReviewed = widget.feedback.status == 'reviewed';
 
-    String initials = widget.feedback.userId.length >= 2 
-        ? widget.feedback.userId.substring(0, 2).toUpperCase() 
+    String initials = widget.feedback.userEmail.length >= 2 
+        ? widget.feedback.userEmail.substring(0, 2).toUpperCase() 
         : 'U';
     String dateStr = DateFormat.yMMMd().add_jm().format(widget.feedback.createdAt);
-    bool isReviewed = widget.feedback.status == 'reviewed';
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Feedback Details'),
         actions: [
-          if (!_isLoading && (_userRole == 'admin' || (isOwner && isOpen)))
+          if (!_isLoading && (_userRole == 'admin' || isOwner))
             IconButton(
               icon: const Icon(Icons.delete, color: Colors.redAccent),
               onPressed: _deleteFeedback,
@@ -166,7 +181,7 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                 elevation: 4,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 child: Padding(
-                  padding: const EdgeInsets.all(24.0),
+                  padding: const EdgeInsets.all(20.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -180,6 +195,7 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                               style: TextStyle(
                                 color: Theme.of(context).colorScheme.onPrimaryContainer,
                                 fontSize: 20,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
@@ -188,10 +204,28 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  'User ID: ${widget.feedback.userId}',
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
-                                  overflow: TextOverflow.ellipsis,
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        widget.feedback.userEmail,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: _getCategoryColor(context, widget.feedback.category),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        widget.feedback.category.toUpperCase(),
+                                        style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
@@ -203,8 +237,8 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                               ],
                             ),
                           ),
-                          if (isOwner && isOpen)
-                            TextButton.icon(
+                          if (isOwner)
+                            IconButton(
                               onPressed: () {
                                 Navigator.push(
                                   context,
@@ -215,8 +249,7 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                                   ),
                                 );
                               },
-                              icon: const Icon(Icons.edit, size: 16),
-                              label: const Text('Edit'),
+                              icon: const Icon(Icons.edit),
                             ),
                         ],
                       ),
@@ -240,23 +273,37 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
+                      if (widget.feedback.photoUrl != null) ...[
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: CachedNetworkImage(
+                            imageUrl: widget.feedback.photoUrl!,
+                            width: double.infinity,
+                            height: 220,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Container(color: Colors.grey[300], child: const Center(child: CircularProgressIndicator())),
+                            errorWidget: (context, url, error) => const Icon(Icons.broken_image, size: 50),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
                       const Text(
                         'Comment:',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       Text(
                         widget.feedback.comment,
                         style: const TextStyle(fontSize: 16, height: 1.5),
                       ),
-                      if (widget.feedback.adminReply != null) ...[
+                      if (widget.feedback.adminReplyText != null) ...[
                         const Divider(height: 40),
                         const Text(
-                          'Official Admin Reply:',
+                          'Response from Admin:',
                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(16),
@@ -265,9 +312,21 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: Colors.green.withOpacity(0.3)),
                           ),
-                          child: Text(
-                            widget.feedback.adminReply!,
-                            style: const TextStyle(fontSize: 15, height: 1.4, fontStyle: FontStyle.italic),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.feedback.adminReplyText!,
+                                style: const TextStyle(fontSize: 15, height: 1.4),
+                              ),
+                              if (widget.feedback.adminRepliedAt != null) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Replied at: ${DateFormat.yMMMd().add_jm().format(widget.feedback.adminRepliedAt!)}',
+                                  style: TextStyle(fontSize: 11, color: Colors.grey[600], fontStyle: FontStyle.italic),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                       ],
@@ -289,15 +348,15 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                         ),
                         const SizedBox(height: 16),
                         const Text(
-                          'Write/Update Response:',
+                          'Reply to Feedback:',
                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
                         TextField(
                           controller: _replyController,
                           maxLines: 3,
                           decoration: InputDecoration(
-                            hintText: 'Type official response...',
+                            hintText: 'Type response text here...',
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                         ),

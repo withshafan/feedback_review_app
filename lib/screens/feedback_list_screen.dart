@@ -118,7 +118,12 @@ class _FeedbackListScreenState extends State<FeedbackListScreen> {
                 return FeedbackCard(
                   feedback: item,
                   onTap: () {
-                    // Navigate to details in Phase 7
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => FeedbackDetailScreen(feedback: item),
+                      ),
+                    );
                   },
                 );
               },
