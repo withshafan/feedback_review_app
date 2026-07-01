@@ -49,6 +49,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.13.1
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -58,6 +59,22 @@ dev_dependencies:
   flutter_lints: ^6.0.0
 
 # For information on the generic Dart part of this file, see the
+# https://dart.dev/guides/language/pub-api-doc
+
+# A package can or cannot expose public API. For information on how to
+# customize a package's organization, see https://dart.dev/tools/pub/package-layout
+
+# flutter:
+#   # The following line ensures that the Material Icons font is
+#   # included with your application, so that you can use the icons in
+#   # the material Icons class.
+#   uses-material-design: true
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon/app_logo.png"
+  min_sdk_android: 21
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
