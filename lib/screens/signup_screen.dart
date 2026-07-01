@@ -2,34 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
-import 'signup_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class SignupScreen extends StatefulWidget {
+  const SignupScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _SignupScreenState extends State<SignupScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   final _formKey = GlobalKey<FormState>();
 
-  Future<void> _login() async {
+  Future<void> _signup() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      await context.read<AuthService>().signIn(
+      await context.read<AuthService>().signUp(
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
-      if (mounted) Navigator.pushReplacementNamed(context, '/home');
+      if (mounted) Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
     } on FirebaseAuthException catch (e) {
-      String message = 'Login failed';
-      if (e.code == 'user-not-found' || e.code == 'invalid-credential') {
-        message = 'No user found or wrong password.';
+      String message = 'Signup failed';
+      if (e.code == 'email-already-in-use') {
+        message = 'The account already exists for that email.';
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -44,6 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: const Text('Sign Up')),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -53,10 +53,10 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.feedback, size: 80, color: Theme.of(context).colorScheme.primary),
+                  Icon(Icons.person_add, size: 80, color: Theme.of(context).colorScheme.primary),
                   const SizedBox(height: 20),
                   Text(
-                    'Feedback & Review',
+                    'Create Account',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.primary,
@@ -101,24 +101,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     width: double.infinity,
                     height: 52,
                     child: FilledButton(
-                      onPressed: _isLoading ? null : _login,
+                      onPressed: _isLoading ? null : _signup,
                       style: FilledButton.styleFrom(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       child: _isLoading
                           ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : const Text('Sign In', style: TextStyle(fontSize: 18)),
+                          : const Text('Sign Up', style: TextStyle(fontSize: 18)),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const SignupScreen()),
-                      );
-                    },
-                    child: const Text("Don't have an account? Sign up"),
                   ),
                 ],
               ),

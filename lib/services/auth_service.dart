@@ -9,6 +9,21 @@ class AuthService {
 
   User? get currentUser => _auth.currentUser;
 
+  Future<void> signIn(String email, String password) async {
+    await _auth.signInWithEmailAndPassword(email: email, password: password);
+  }
+
+  Future<void> signUp(String email, String password) async {
+    UserCredential credential = await _auth.createUserWithEmailAndPassword(email: email, password: password);
+    if (credential.user != null) {
+      await _firestore.collection('users').doc(credential.user!.uid).set({
+        'email': email,
+        'role': 'user',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+  }
+
   Future<String> getUserRole(String uid) async {
     try {
       final doc = await _firestore.collection('users').doc(uid).get();
