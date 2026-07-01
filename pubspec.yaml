@@ -31,9 +31,9 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.2
-  firebase_core: ^2.24.2
-  firebase_auth: ^4.15.3
-  cloud_firestore: ^4.13.6
+  firebase_core: ^4.11.0
+  firebase_auth: ^6.5.4
+  cloud_firestore: ^6.6.0
   google_fonts: ^8.1.0
   flutter_rating_bar: ^4.0.1
   shimmer: ^3.0.0
@@ -42,7 +42,7 @@ dependencies:
   provider: ^6.1.5+1
   cached_network_image: ^3.4.1
   image_picker: ^1.2.3
-  firebase_storage: ^11.6.5
+  firebase_storage: ^13.4.3
   csv: ^8.0.0
   share_plus: ^13.2.0
 
