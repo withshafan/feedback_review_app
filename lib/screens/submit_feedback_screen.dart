@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:provider/provider.dart';
+import '../models/feedback_model.dart';
 import '../services/feedback_service.dart';
 
 class SubmitFeedbackScreen extends StatefulWidget {
-  const SubmitFeedbackScreen({super.key});
+  final FeedbackModel? existingFeedback;
+
+  const SubmitFeedbackScreen({super.key, this.existingFeedback});
 
   @override
   State<SubmitFeedbackScreen> createState() => _SubmitFeedbackScreenState();
@@ -12,23 +15,42 @@ class SubmitFeedbackScreen extends StatefulWidget {
 
 class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _commentController = TextEditingController();
-  double _rating = 5.0; // Default rating
+  late final TextEditingController _commentController;
+  late double _rating;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _commentController = TextEditingController(text: widget.existingFeedback?.comment ?? '');
+    _rating = widget.existingFeedback?.rating ?? 5.0;
+  }
 
   Future<void> _submitFeedback() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
     try {
-      await context.read<FeedbackService>().addFeedback(
-        _rating,
-        _commentController.text.trim(),
-      );
+      final service = context.read<FeedbackService>();
+      if (widget.existingFeedback != null) {
+        await service.updateFeedbackComment(
+          widget.existingFeedback!.id,
+          _rating,
+          _commentController.text.trim(),
+        );
+      } else {
+        await service.addFeedback(
+          _rating,
+          _commentController.text.trim(),
+        );
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Thank you for your feedback!'),
+          SnackBar(
+            content: Text(widget.existingFeedback != null 
+                ? 'Feedback updated successfully!' 
+                : 'Thank you for your feedback!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -50,9 +72,11 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.existingFeedback != null;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Submit Feedback'),
+        title: Text(isEditing ? 'Edit Feedback' : 'Submit Feedback'),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -122,7 +146,7 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> {
                     ),
                     child: _isLoading
                         ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Text('Submit', style: TextStyle(fontSize: 18)),
+                        : Text(isEditing ? 'Save Changes' : 'Submit', style: const TextStyle(fontSize: 18)),
                   ),
                 ),
               ],

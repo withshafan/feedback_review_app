@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/feedback_model.dart';
 import '../services/auth_service.dart';
 import '../services/feedback_service.dart';
+import 'submit_feedback_screen.dart';
 
 class FeedbackDetailScreen extends StatefulWidget {
   final FeedbackModel feedback;
@@ -18,11 +19,14 @@ class FeedbackDetailScreen extends StatefulWidget {
 class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
   String _userRole = 'user';
   bool _isLoading = true;
+  final _replyController = TextEditingController();
+  bool _isSubmittingReply = false;
 
   @override
   void initState() {
     super.initState();
     _fetchRole();
+    _replyController.text = widget.feedback.adminReply ?? '';
   }
 
   Future<void> _fetchRole() async {
@@ -53,7 +57,7 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Status updated to $newStatus')),
         );
-        Navigator.pop(context); // Pop back so list refreshes or user continues browsing
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
@@ -102,8 +106,38 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
     }
   }
 
+  Future<void> _submitReply() async {
+    if (_replyController.text.trim().isEmpty) return;
+    setState(() => _isSubmittingReply = true);
+    try {
+      await context.read<FeedbackService>().addAdminReply(
+            widget.feedback.id,
+            _replyController.text.trim(),
+          );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Admin reply posted successfully!')),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to post reply: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmittingReply = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final authService = context.watch<AuthService>();
+    final currentUser = authService.currentUser;
+    final isOwner = currentUser != null && currentUser.uid == widget.feedback.userId;
+    final isOpen = widget.feedback.status == 'open';
+
     String initials = widget.feedback.userId.length >= 2 
         ? widget.feedback.userId.substring(0, 2).toUpperCase() 
         : 'U';
@@ -114,7 +148,7 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
       appBar: AppBar(
         title: const Text('Feedback Details'),
         actions: [
-          if (!_isLoading && _userRole == 'admin')
+          if (!_isLoading && (_userRole == 'admin' || (isOwner && isOpen)))
             IconButton(
               icon: const Icon(Icons.delete, color: Colors.redAccent),
               onPressed: _deleteFeedback,
@@ -169,6 +203,21 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                               ],
                             ),
                           ),
+                          if (isOwner && isOpen)
+                            TextButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => SubmitFeedbackScreen(
+                                      existingFeedback: widget.feedback,
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.edit, size: 16),
+                              label: const Text('Edit'),
+                            ),
                         ],
                       ),
                       const Divider(height: 32),
@@ -201,6 +250,27 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                         widget.feedback.comment,
                         style: const TextStyle(fontSize: 16, height: 1.5),
                       ),
+                      if (widget.feedback.adminReply != null) ...[
+                        const Divider(height: 40),
+                        const Text(
+                          'Official Admin Reply:',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.green.withOpacity(0.3)),
+                          ),
+                          child: Text(
+                            widget.feedback.adminReply!,
+                            style: const TextStyle(fontSize: 15, height: 1.4, fontStyle: FontStyle.italic),
+                          ),
+                        ),
+                      ],
                       if (!_isLoading && _userRole == 'admin') ...[
                         const Divider(height: 40),
                         Row(
@@ -216,6 +286,30 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                               activeColor: Colors.green,
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Write/Update Response:',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _replyController,
+                          maxLines: 3,
+                          decoration: InputDecoration(
+                            hintText: 'Type official response...',
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton(
+                            onPressed: _isSubmittingReply ? null : _submitReply,
+                            child: _isSubmittingReply
+                                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                : const Text('Post Reply'),
+                          ),
                         ),
                       ],
                     ],

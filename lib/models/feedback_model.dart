@@ -7,6 +7,8 @@ class FeedbackModel {
   final String comment;
   final DateTime createdAt;
   final String status; // "open" or "reviewed"
+  final String? adminReply;
+  final DateTime? adminRepliedAt;
 
   FeedbackModel({
     required this.id,
@@ -15,6 +17,8 @@ class FeedbackModel {
     required this.comment,
     required this.createdAt,
     required this.status,
+    this.adminReply,
+    this.adminRepliedAt,
   });
 
   factory FeedbackModel.fromFirestore(DocumentSnapshot doc) {
@@ -26,6 +30,8 @@ class FeedbackModel {
       comment: data['comment'] ?? '',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       status: data['status'] ?? 'open',
+      adminReply: data['adminReply'],
+      adminRepliedAt: (data['adminRepliedAt'] as Timestamp?)?.toDate(),
     );
   }
 
@@ -36,6 +42,8 @@ class FeedbackModel {
       'comment': comment,
       'createdAt': Timestamp.fromDate(createdAt),
       'status': status,
+      'adminReply': adminReply,
+      'adminRepliedAt': adminRepliedAt != null ? Timestamp.fromDate(adminRepliedAt!) : null,
     };
   }
 }

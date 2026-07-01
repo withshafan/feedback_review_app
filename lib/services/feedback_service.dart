@@ -41,6 +41,21 @@ class FeedbackService {
     });
   }
 
+  Future<void> updateFeedbackComment(String id, double rating, String comment) async {
+    await _firestore.collection('feedback').doc(id).update({
+      'rating': rating,
+      'comment': comment,
+    });
+  }
+
+  Future<void> addAdminReply(String id, String reply) async {
+    await _firestore.collection('feedback').doc(id).update({
+      'adminReply': reply,
+      'adminRepliedAt': FieldValue.serverTimestamp(),
+      'status': 'reviewed', // Automatically mark as reviewed when replying
+    });
+  }
+
   Future<void> updateFeedbackStatus(String id, String newStatus) async {
     await _firestore.collection('feedback').doc(id).update({
       'status': newStatus,
