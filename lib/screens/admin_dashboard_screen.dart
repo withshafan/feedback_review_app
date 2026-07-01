@@ -1,11 +1,79 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:csv/csv.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import '../models/feedback_model.dart';
 import '../services/feedback_service.dart';
+import '../widgets/feedback_card.dart';
+import 'feedback_detail_screen.dart';
 
-class AdminDashboardScreen extends StatelessWidget {
+class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
+
+  @override
+  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+}
+
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  String _searchQuery = '';
+  String? _categoryFilter;
+
+  Future<void> _exportCSV(List<FeedbackModel> list) async {
+    try {
+      List<List<dynamic>> rows = [
+        ["ID", "User Email", "Rating", "Comment", "Category", "Status", "Admin Reply", "Created At"]
+      ];
+      for (var f in list) {
+        rows.add([
+          f.id,
+          f.userEmail,
+          f.rating,
+          f.comment,
+          f.category,
+          f.status,
+          f.adminReplyText ?? '',
+          f.createdAt.toIso8601String()
+        ]);
+      }
+      String csvString = const ListToCsvConverter().convert(rows);
+      
+      final directory = await getTemporaryDirectory();
+      final path = "${directory.path}/feedback_export_${DateTime.now().millisecondsSinceEpoch}.csv";
+      final file = File(path);
+      await file.writeAsString(csvString);
+      
+      await Share.shareXFiles([XFile(path)], text: 'Feedback Data Export');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export failed: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  BarChartGroupData _buildBarGroup(int x, double y, BuildContext context) {
+    return BarChartGroupData(
+      x: x,
+      barRods: [
+        BarChartRodData(
+          toY: y,
+          color: Theme.of(context).colorScheme.primary,
+          width: 20,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+          backDrawRodData: BackgroundBarChartRodData(
+            show: true,
+            toY: 5,
+            color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.2),
+          ),
+        ),
+      ],
+      showingTooltipIndicators: [0],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -13,7 +81,7 @@ class AdminDashboardScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin Dashboard'),
+        title: const Text('Dashboard'),
       ),
       body: StreamBuilder<List<FeedbackModel>>(
         stream: feedbackService.getFeedbackStream(),
@@ -21,31 +89,45 @@ class AdminDashboardScreen extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
+
           if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return Center(child: Text('Error loading dashboard: ${snapshot.error}'));
           }
 
-          final feedbackList = snapshot.data ?? [];
-          
-          if (feedbackList.isEmpty) {
+          final allFeedback = snapshot.data ?? [];
+
+          if (allFeedback.isEmpty) {
             return const Center(child: Text('No feedback data available.'));
           }
 
-          int totalFeedback = feedbackList.length;
-          double totalRating = feedbackList.fold(0, (sum, item) => sum + item.rating);
+          // Aggregates
+          int totalFeedback = allFeedback.length;
+          double totalRating = allFeedback.fold(0.0, (sum, f) => sum + f.rating);
           double avgRating = totalRating / totalFeedback;
 
           final now = DateTime.now();
           final oneWeekAgo = now.subtract(const Duration(days: 7));
-          int feedbackThisWeek = feedbackList.where((f) => f.createdAt.isAfter(oneWeekAgo)).length;
+          int feedbackThisWeek = allFeedback.where((f) => f.createdAt.isAfter(oneWeekAgo)).length;
 
-          // Rating distribution (1 to 5 stars)
+          int openCount = allFeedback.where((f) => f.status == 'open').length;
+          int reviewedCount = allFeedback.where((f) => f.status == 'reviewed').length;
+
+          // Rating distribution
           Map<int, int> distribution = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
-          for (var f in feedbackList) {
+          for (var f in allFeedback) {
             int r = f.rating.round();
             if (r >= 1 && r <= 5) {
               distribution[r] = distribution[r]! + 1;
             }
+          }
+
+          // Apply local filter/search for the embedded list
+          List<FeedbackModel> filteredList = allFeedback;
+          if (_searchQuery.isNotEmpty) {
+            filteredList = filteredList.where((f) => f.comment.toLowerCase().contains(_searchQuery)).toList();
+          }
+          if (_categoryFilter != null) {
+            filteredList = filteredList.where((f) => f.category == _categoryFilter).toList();
           }
 
           return SafeArea(
@@ -54,42 +136,61 @@ class AdminDashboardScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Summary', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(
-                        child: _StatCard(
-                          title: 'Total',
-                          value: totalFeedback.toString(),
-                          icon: Icons.list_alt,
-                        ),
+                      const Text(
+                        'Overview',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _StatCard(
-                          title: 'Avg Rating',
-                          value: avgRating.toStringAsFixed(1),
-                          icon: Icons.star,
-                          iconColor: Colors.amber,
-                        ),
+                      IconButton.filledTonal(
+                        onPressed: () => _exportCSV(filteredList),
+                        icon: const Icon(Icons.download),
+                        tooltip: 'Export CSV',
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _StatCard(
-                          title: 'This Week',
-                          value: feedbackThisWeek.toString(),
-                          icon: Icons.trending_up,
-                          iconColor: Colors.green,
-                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Aggregate Cards
+                  GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    childAspectRatio: 1.5,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    children: [
+                      _StatCard(
+                        title: 'Total Reviews',
+                        value: totalFeedback.toString(),
+                        icon: Icons.reviews,
+                      ),
+                      _StatCard(
+                        title: 'Average Rating',
+                        value: avgRating.toStringAsFixed(1),
+                        icon: Icons.star,
+                        iconColor: Colors.amber,
+                      ),
+                      _StatCard(
+                        title: 'New This Week',
+                        value: feedbackThisWeek.toString(),
+                        icon: Icons.date_range,
+                      ),
+                      _StatCard(
+                        title: 'Open / Reviewed',
+                        value: '$openCount / $reviewedCount',
+                        icon: Icons.check_circle_outline,
                       ),
                     ],
                   ),
                   const SizedBox(height: 32),
-                  const Text('Rating Distribution', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Rating Distribution',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 24),
                   SizedBox(
-                    height: 250,
+                    height: 200,
                     child: BarChart(
                       BarChartData(
                         alignment: BarChartAlignment.spaceAround,
@@ -108,15 +209,9 @@ class AdminDashboardScreen extends StatelessWidget {
                               },
                             ),
                           ),
-                          leftTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
-                          ),
-                          rightTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
-                          ),
-                          topTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
-                          ),
+                          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                         ),
                         gridData: const FlGridData(show: false),
                         borderData: FlBorderData(show: false),
@@ -130,32 +225,74 @@ class AdminDashboardScreen extends StatelessWidget {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 32),
+                  const Text(
+                    'Moderate Feedback',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Search within comments...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onChanged: (val) {
+                      setState(() {
+                        _searchQuery = val.toLowerCase();
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        ChoiceChip(
+                          label: const Text('All Categories'),
+                          selected: _categoryFilter == null,
+                          onSelected: (_) => setState(() => _categoryFilter = null),
+                        ),
+                        const SizedBox(width: 8),
+                        ...['bug', 'feature', 'praise', 'complaint', 'general'].map((cat) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: ChoiceChip(
+                              label: Text(cat[0].toUpperCase() + cat.substring(1)),
+                              selected: _categoryFilter == cat,
+                              onSelected: (_) => setState(() => _categoryFilter = cat),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: filteredList.length,
+                    itemBuilder: (context, index) {
+                      final item = filteredList[index];
+                      return FeedbackCard(
+                        feedback: item,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => FeedbackDetailScreen(feedback: item),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
           );
         },
       ),
-    );
-  }
-
-  BarChartGroupData _buildBarGroup(int x, double y, BuildContext context) {
-    return BarChartGroupData(
-      x: x,
-      barRods: [
-        BarChartRodData(
-          toY: y,
-          color: Theme.of(context).colorScheme.primary,
-          width: 22,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
-          backDrawRodData: BackgroundBarChartRodData(
-            show: true,
-            toY: 5, // Visual background line
-            color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
-          ),
-        ),
-      ],
-      showingTooltipIndicators: [0],
     );
   }
 }
@@ -179,20 +316,30 @@ class _StatCard extends StatelessWidget {
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
+        padding: const EdgeInsets.all(12.0),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 28, color: iconColor ?? Theme.of(context).colorScheme.primary),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Icon(icon, size: 24, color: iconColor ?? Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 4),
+              ],
+            ),
             const SizedBox(height: 8),
             Text(
               value,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
             Text(
               title,
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
