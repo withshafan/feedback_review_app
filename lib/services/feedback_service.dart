@@ -8,57 +8,87 @@ class FeedbackService {
 
   FeedbackService(this._authService);
 
-  Stream<List<FeedbackModel>> getFeedbackStream() async* {
+  Stream<List<FeedbackModel>> getFeedbackStream() {
+    return _firestore
+        .collection('feedback')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => FeedbackModel.fromFirestore(doc)).toList();
+    });
+  }
+
+  Stream<List<FeedbackModel>> getMyFeedbackStream() async* {
     final user = _authService.currentUser;
     if (user == null) {
       yield [];
       return;
     }
 
-    final role = await _authService.getUserRole(user.uid);
-    Query query = _firestore.collection('feedback').orderBy('createdAt', descending: true);
-
-    if (role != 'admin') {
-      // Normal users only see their own feedback
-      query = query.where('userId', isEqualTo: user.uid);
-    }
-
-    yield* query.snapshots().map((snapshot) {
+    yield* _firestore
+        .collection('feedback')
+        .where('userId', isEqualTo: user.uid)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
       return snapshot.docs.map((doc) => FeedbackModel.fromFirestore(doc)).toList();
     });
   }
 
-  Future<void> addFeedback(double rating, String comment) async {
+  Future<void> addFeedback({
+    required double rating,
+    required String comment,
+    required String category,
+    String? photoUrl,
+  }) async {
     final user = _authService.currentUser;
     if (user == null) throw Exception('Must be logged in to submit feedback');
 
     await _firestore.collection('feedback').add({
       'userId': user.uid,
+      'userEmail': user.email ?? '',
       'rating': rating,
       'comment': comment,
-      'createdAt': FieldValue.serverTimestamp(),
+      'category': category,
+      'photoUrl': photoUrl,
       'status': 'open',
+      'adminReply': null,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
     });
   }
 
-  Future<void> updateFeedbackComment(String id, double rating, String comment) async {
+  Future<void> updateFeedback({
+    required String id,
+    required double rating,
+    required String comment,
+    required String category,
+    String? photoUrl,
+  }) async {
     await _firestore.collection('feedback').doc(id).update({
       'rating': rating,
       'comment': comment,
+      'category': category,
+      'photoUrl': photoUrl,
+      'updatedAt': FieldValue.serverTimestamp(),
     });
   }
 
-  Future<void> addAdminReply(String id, String reply) async {
+  Future<void> addAdminReply(String id, String replyText) async {
     await _firestore.collection('feedback').doc(id).update({
-      'adminReply': reply,
-      'adminRepliedAt': FieldValue.serverTimestamp(),
-      'status': 'reviewed', // Automatically mark as reviewed when replying
+      'adminReply': {
+        'text': replyText,
+        'repliedAt': FieldValue.serverTimestamp(),
+      },
+      'status': 'reviewed',
+      'updatedAt': FieldValue.serverTimestamp(),
     });
   }
 
-  Future<void> updateFeedbackStatus(String id, String newStatus) async {
+  Future<void> updateFeedbackStatus(String id, String status) async {
     await _firestore.collection('feedback').doc(id).update({
-      'status': newStatus,
+      'status': status,
+      'updatedAt': FieldValue.serverTimestamp(),
     });
   }
 

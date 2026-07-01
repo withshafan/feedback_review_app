@@ -36,6 +36,16 @@ class AuthService {
     return 'user';
   }
 
+  Future<void> updateLastDashboardVisit(String uid) async {
+    try {
+      await _firestore.collection('users').doc(uid).update({
+        'lastDashboardVisit': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('Error updating last dashboard visit: $e');
+    }
+  }
+
   Future<void> signOut() async {
     await _auth.signOut();
   }

@@ -8,6 +8,7 @@ import 'theme/app_theme.dart';
 import 'theme/theme_provider.dart';
 import 'services/auth_service.dart';
 import 'services/feedback_service.dart';
+import 'services/storage_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +27,7 @@ class FeedbackReviewApp extends StatelessWidget {
         ProxyProvider<AuthService, FeedbackService>(
           update: (context, authService, previous) => FeedbackService(authService),
         ),
+        Provider<StorageService>(create: (_) => StorageService()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
       child: Consumer<ThemeProvider>(
