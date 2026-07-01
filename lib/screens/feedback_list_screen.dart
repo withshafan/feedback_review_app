@@ -5,6 +5,7 @@ import '../models/feedback_model.dart';
 import '../services/feedback_service.dart';
 import '../widgets/feedback_card.dart';
 import 'submit_feedback_screen.dart';
+import 'feedback_detail_screen.dart';
 
 class FeedbackListScreen extends StatefulWidget {
   const FeedbackListScreen({super.key});
@@ -118,7 +119,12 @@ class _FeedbackListScreenState extends State<FeedbackListScreen> {
                 return FeedbackCard(
                   feedback: item,
                   onTap: () {
-                    // Navigate to detail screen later in Phase 7
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => FeedbackDetailScreen(feedback: item),
+                      ),
+                    );
                   },
                 );
               },
