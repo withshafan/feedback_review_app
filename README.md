@@ -5,6 +5,8 @@
 [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-lightgrey.svg)](#)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](#)
 
+### 📲 [Download the Android APK Release Here](https://drive.google.com/file/d/1uNyADH0e8ARG8HJQTbfTFaRcf024FRiF/view?usp=sharing)
+
 A beautiful, production-ready **Public Feedback and Review Feed application** built using **Flutter** and backed by **Firebase**.
 
 Users can post reviews with star ratings, write comments, categorize their feedback, and upload photographic evidence. Admins have access to a secure, real-time statistics dashboard with interactive data charts, moderation controls, and CSV reporting options.
