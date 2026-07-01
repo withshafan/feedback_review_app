@@ -15,9 +15,107 @@ class FeedbackListScreen extends StatefulWidget {
 }
 
 class _FeedbackListScreenState extends State<FeedbackListScreen> {
+  String _searchQuery = '';
+  double? _ratingFilter;
+  String? _categoryFilter;
+
   Future<void> _refreshData() async {
     await Future.delayed(const Duration(milliseconds: 800));
     setState(() {});
+  }
+
+  void _openFilterModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 24,
+                right: 24,
+                top: 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Filter Feed', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 24),
+                  TextField(
+                    decoration: InputDecoration(
+                      labelText: 'Search comments',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onChanged: (val) {
+                      setModalState(() => _searchQuery = val.toLowerCase());
+                      setState(() => _searchQuery = val.toLowerCase());
+                    },
+                    controller: TextEditingController(text: _searchQuery)..selection = TextSelection.collapsed(offset: _searchQuery.length),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<double?>(
+                    value: _ratingFilter,
+                    decoration: InputDecoration(
+                      labelText: 'Rating',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: null, child: Text('All Ratings')),
+                      DropdownMenuItem(value: 5.0, child: Text('5 Stars')),
+                      DropdownMenuItem(value: 4.0, child: Text('4 Stars')),
+                      DropdownMenuItem(value: 3.0, child: Text('3 Stars')),
+                      DropdownMenuItem(value: 2.0, child: Text('2 Stars')),
+                      DropdownMenuItem(value: 1.0, child: Text('1 Star')),
+                    ],
+                    onChanged: (val) {
+                      setModalState(() => _ratingFilter = val);
+                      setState(() => _ratingFilter = val);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String?>(
+                    value: _categoryFilter,
+                    decoration: InputDecoration(
+                      labelText: 'Category',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: null, child: Text('All Categories')),
+                      DropdownMenuItem(value: 'bug', child: Text('Bug')),
+                      DropdownMenuItem(value: 'feature', child: Text('Feature')),
+                      DropdownMenuItem(value: 'praise', child: Text('Praise')),
+                      DropdownMenuItem(value: 'complaint', child: Text('Complaint')),
+                      DropdownMenuItem(value: 'general', child: Text('General')),
+                    ],
+                    onChanged: (val) {
+                      setModalState(() => _categoryFilter = val);
+                      setState(() => _categoryFilter = val);
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Apply Filters'),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   Widget _buildShimmerLoading() {
@@ -63,20 +161,20 @@ class _FeedbackListScreenState extends State<FeedbackListScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(bool hasFilters) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.inbox_outlined, size: 80, color: Colors.grey[400]),
+          Icon(hasFilters ? Icons.search_off : Icons.inbox_outlined, size: 80, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
-            'No feedback yet',
+            hasFilters ? 'No matches found' : 'No feedback yet',
             style: TextStyle(fontSize: 20, color: Colors.grey[600], fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
-            'Tap the + button to share your thoughts.',
+            hasFilters ? 'Try altering your filters.' : 'Tap the + button to share your thoughts.',
             style: TextStyle(color: Colors.grey[500]),
           ),
         ],
@@ -91,6 +189,12 @@ class _FeedbackListScreenState extends State<FeedbackListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('All Feedback'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            onPressed: _openFilterModal,
+          ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: _refreshData,
@@ -105,10 +209,23 @@ class _FeedbackListScreenState extends State<FeedbackListScreen> {
               return Center(child: Text('Error loading feedback: ${snapshot.error}'));
             }
 
-            final feedbackList = snapshot.data ?? [];
+            List<FeedbackModel> feedbackList = snapshot.data ?? [];
+
+            // Apply local filters
+            if (_searchQuery.isNotEmpty) {
+              feedbackList = feedbackList.where((f) => f.comment.toLowerCase().contains(_searchQuery)).toList();
+            }
+            if (_ratingFilter != null) {
+              feedbackList = feedbackList.where((f) => f.rating == _ratingFilter).toList();
+            }
+            if (_categoryFilter != null) {
+              feedbackList = feedbackList.where((f) => f.category.toLowerCase() == _categoryFilter!.toLowerCase()).toList();
+            }
+
+            bool hasFilters = _searchQuery.isNotEmpty || _ratingFilter != null || _categoryFilter != null;
 
             if (feedbackList.isEmpty) {
-              return _buildEmptyState();
+              return _buildEmptyState(hasFilters);
             }
 
             return ListView.builder(
