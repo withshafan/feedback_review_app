@@ -5,6 +5,8 @@ import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'theme/app_theme.dart';
+import 'services/auth_service.dart';
+import 'services/feedback_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,8 +21,10 @@ class FeedbackReviewApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // Placeholder provider until we create our services in Phase 3
-        Provider(create: (_) => 'Placeholder'),
+        Provider<AuthService>(create: (_) => AuthService()),
+        ProxyProvider<AuthService, FeedbackService>(
+          update: (context, authService, previous) => FeedbackService(authService),
+        ),
       ],
       child: MaterialApp(
         title: 'Feedback & Review',
