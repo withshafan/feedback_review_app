@@ -11,12 +11,18 @@ Users can post reviews with star ratings, write comments, categorize their feedb
 
 ---
 
-## 📸 App Icon Concept
+## 🎨 Branding & Visual Identity
 
-Our brand new, modern claymorphic design combines a communication bubble with a star to represent active listening and customer satisfaction:
+The visual identity of **Feedback_Review** combines dialogue and discovery. The icon marries a speech bubble silhouette with an integrated golden rating star, capturing user feedback and highlighting administrative quality response systems:
 
 <p align="center">
-  <img src="assets/icon/app_logo.png" width="160" alt="Feedback_Review App Icon"/>
+  <kbd>
+    <img src="assets/icon/app_logo.png" width="130" style="border-radius: 20%;" alt="Feedback_Review Branding Concept"/>
+  </kbd>
+</p>
+
+<p align="center">
+  <sub><b>Branding Concept & Application Mark</b></sub>
 </p>
 
 ---
