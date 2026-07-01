@@ -5,7 +5,7 @@
 [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-lightgrey.svg)](#)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](#)
 
-### 📲 [Download the Android APK Release Here](https://drive.google.com/file/d/1uNyADH0e8ARG8HJQTbfTFaRcf024FRiF/view?usp=sharing)
+### 📲 [Download the Android APK Release Here](https://drive.google.com/file/d/1Zl3mpJI2jM2cyAW5ka1vQXFWYV69SLjV/view?usp=sharing)
 
 A beautiful, production-ready **Public Feedback and Review Feed application** built using **Flutter** and backed by **Firebase**.
 
