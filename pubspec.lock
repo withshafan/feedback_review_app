@@ -289,30 +289,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.9.0"
-  firebase_storage:
-    dependency: "direct main"
-    description:
-      name: firebase_storage
-      sha256: f732bbcd82d21cfbe49b6fe5f4c50334f5f3660a151f004f58da388f8e39e6d3
-      url: "https://pub.dev"
-    source: hosted
-    version: "13.4.3"
-  firebase_storage_platform_interface:
-    dependency: transitive
-    description:
-      name: firebase_storage_platform_interface
-      sha256: "2515a8d16be44fffb3782669543804a651e73f637bb668db77d76a5bd38c396f"
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.0.3"
-  firebase_storage_web:
-    dependency: transitive
-    description:
-      name: firebase_storage_web
-      sha256: "05813d665afa2c2bafaba62c97dc1b510886b1b4fcec49bf05934bd78795c6e7"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.11.9"
   fixnum:
     dependency: transitive
     description:
@@ -625,7 +601,7 @@ packages:
     source: hosted
     version: "2.2.0"
   path:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: path
       sha256: "75cca69d1490965be98c73ceaea117e8a04dd21217b37b292c9ddbec0d955bc5"
@@ -633,7 +609,7 @@ packages:
     source: hosted
     version: "1.9.1"
   path_provider:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: path_provider
       sha256: a7f4874f987173da295a61c181b8ee71dab59b332a486b391babf26a1b884825
@@ -782,7 +758,7 @@ packages:
     source: hosted
     version: "1.10.2"
   sqflite:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: sqflite
       sha256: "564cfed0746fe53140c23b70b308e045c3b31f17778f2f326ccb7d804ea0250a"
@@ -910,7 +886,7 @@ packages:
     source: hosted
     version: "3.1.5"
   uuid:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: uuid
       sha256: "1fef9e8e11e2991bb773070d4656b7bd5d850967a2456cfc83cf47925ba79489"

@@ -83,20 +83,20 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> {
       }
 
       if (widget.existingFeedback != null) {
-        await feedbackService.updateFeedback(
+        feedbackService.updateFeedback(
           id: widget.existingFeedback!.id,
           rating: _rating,
           comment: _commentController.text.trim(),
           category: _category,
           photoUrl: finalPhotoUrl,
-        );
+        ).catchError((e) => debugPrint('Error updating: $e'));
       } else {
-        await feedbackService.addFeedback(
+        feedbackService.addFeedback(
           rating: _rating,
           comment: _commentController.text.trim(),
           category: _category,
           photoUrl: finalPhotoUrl,
-        );
+        ).catchError((e) => debugPrint('Error adding: $e'));
       }
 
       if (mounted) {
@@ -258,7 +258,9 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> {
                           image: DecorationImage(
                             image: _selectedImageFile != null 
                                 ? FileImage(_selectedImageFile!) as ImageProvider
-                                : NetworkImage(_remotePhotoUrl!),
+                                : _remotePhotoUrl!.startsWith('http')
+                                    ? NetworkImage(_remotePhotoUrl!)
+                                    : FileImage(File(_remotePhotoUrl!)) as ImageProvider,
                             fit: BoxFit.cover,
                           ),
                         ),

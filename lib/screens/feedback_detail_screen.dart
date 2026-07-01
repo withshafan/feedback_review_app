@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:intl/intl.dart';
@@ -277,14 +278,22 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                       if (widget.feedback.photoUrl != null) ...[
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: CachedNetworkImage(
-                            imageUrl: widget.feedback.photoUrl!,
-                            width: double.infinity,
-                            height: 220,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(color: Colors.grey[300], child: const Center(child: CircularProgressIndicator())),
-                            errorWidget: (context, url, error) => const Icon(Icons.broken_image, size: 50),
-                          ),
+                          child: widget.feedback.photoUrl!.startsWith('http')
+                              ? CachedNetworkImage(
+                                  imageUrl: widget.feedback.photoUrl!,
+                                  width: double.infinity,
+                                  height: 220,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Container(color: Colors.grey[300], child: const Center(child: CircularProgressIndicator())),
+                                  errorWidget: (context, url, error) => const Icon(Icons.broken_image, size: 50),
+                                )
+                              : Image.file(
+                                  File(widget.feedback.photoUrl!),
+                                  width: double.infinity,
+                                  height: 220,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 50),
+                                ),
                         ),
                         const SizedBox(height: 20),
                       ],

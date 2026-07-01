@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:intl/intl.dart';
@@ -190,14 +191,22 @@ class FeedbackCard extends StatelessWidget {
                         const SizedBox(width: 12),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: CachedNetworkImage(
-                            imageUrl: feedback.photoUrl!,
-                            width: 60,
-                            height: 60,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(color: Colors.grey[300]),
-                            errorWidget: (context, url, error) => const Icon(Icons.broken_image),
-                          ),
+                          child: feedback.photoUrl!.startsWith('http')
+                              ? CachedNetworkImage(
+                                  imageUrl: feedback.photoUrl!,
+                                  width: 60,
+                                  height: 60,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Container(color: Colors.grey[300]),
+                                  errorWidget: (context, url, error) => const Icon(Icons.broken_image),
+                                )
+                              : Image.file(
+                                  File(feedback.photoUrl!),
+                                  width: 60,
+                                  height: 60,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image),
+                                ),
                         ),
                       ],
                     ],
