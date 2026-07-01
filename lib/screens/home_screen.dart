@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import 'feedback_list_screen.dart';
+import 'my_feedback_screen.dart';
 import 'profile_screen.dart';
 import 'admin_dashboard_screen.dart';
 
@@ -51,6 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final List<Widget> screens = [
       const FeedbackListScreen(),
+      const MyFeedbackScreen(),
       if (isAdmin) const AdminDashboardScreen(),
       const ProfileScreen(),
     ];
@@ -67,7 +69,12 @@ class _HomeScreenState extends State<HomeScreen> {
           const NavigationDestination(
             icon: Icon(Icons.list_alt_outlined),
             selectedIcon: Icon(Icons.list_alt),
-            label: 'Feedback',
+            label: 'Feed',
+          ),
+          const NavigationDestination(
+            icon: Icon(Icons.rate_review_outlined),
+            selectedIcon: Icon(Icons.rate_review),
+            label: 'My Feedback',
           ),
           if (isAdmin)
             const NavigationDestination(
