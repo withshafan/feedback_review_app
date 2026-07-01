@@ -11,19 +11,22 @@ Users can post reviews with star ratings, write comments, categorize their feedb
 
 ---
 
-## 🎨 Branding & Visual Identity
+## 🏗️ Architecture & Data Flow
 
-The visual identity of **Feedback_Review** combines dialogue and discovery. The icon marries a speech bubble silhouette with an integrated golden rating star, capturing user feedback and highlighting administrative quality response systems:
+The application is structured using a service-oriented architecture powered by `Provider` for state management and dependency injection. This ensures a clean separation of concerns:
 
-<p align="center">
-  <kbd>
-    <img src="assets/icon/app_logo.png" width="130" style="border-radius: 20%;" alt="Feedback_Review Branding Concept"/>
-  </kbd>
-</p>
+```mermaid
+graph TD
+    A[UI Screens / Views] -->|User Input / Actions| B[Services: AuthService / FeedbackService / StorageService]
+    B -->|Firestore Queries / File Uploads| C[Firebase: Auth / Firestore / Storage]
+    C -->|Real-time Document Streams| D[Models: FeedbackModel / AppUserModel]
+    D -->|StreamBuilders / Consumer updates| A
+```
 
-<p align="center">
-  <sub><b>Branding Concept & Application Mark</b></sub>
-</p>
+### State Management & Streams
+*   **Decoupled Services**: UI views interact solely with `AuthService`, `FeedbackService`, and `StorageService`. Direct Firebase API calls are banned inside screens.
+*   **Real-time Synchronization**: Feed views rely entirely on `StreamBuilder` connected to Firestore query streams. This facilitates instant UI updates when additions, edits, or status moderations occur.
+*   **Local Processing**: To optimize reads and eliminate extra database indexing constraints, text searches and category filters are computed in local memory using Dart's collection operations on the active stream snapshot.
 
 ---
 
