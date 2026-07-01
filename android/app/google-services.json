@@ -1,0 +1,76 @@
+{
+  "project_info": {
+    "project_number": "771013278045",
+    "project_id": "lms-learning-app-e4e44",
+    "storage_bucket": "lms-learning-app-e4e44.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:771013278045:android:9fba3fd68437297f7d50b4",
+        "android_client_info": {
+          "package_name": "com.example.feedback_review_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "771013278045-bu830a4jcskd1sg7ulmap4lcgh2saqpp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDZ8QK6v36-k73tsEwaGtjwQ9BNe4fvjo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "771013278045-bu830a4jcskd1sg7ulmap4lcgh2saqpp.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:771013278045:android:ac4786e5ec46d6d97d50b4",
+        "android_client_info": {
+          "package_name": "com.example.lms_learning_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "771013278045-neofvtamfm4d0k363cpr1m56rmmaafeg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.lms_learning_app",
+            "certificate_hash": "f4fbff88bb793d2bd23698249e4b51173b515772"
+          }
+        },
+        {
+          "client_id": "771013278045-bu830a4jcskd1sg7ulmap4lcgh2saqpp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDZ8QK6v36-k73tsEwaGtjwQ9BNe4fvjo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "771013278045-bu830a4jcskd1sg7ulmap4lcgh2saqpp.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
